@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Magnetic Drawing Board</title>
+<meta name="description" content="A magnetic drawing board toy: magnetic pen, star and heart stamps, and a slide eraser.">
+<meta name="theme-color" content="#d9ecf2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MagBoard">
+<style>
+:root{
+  --bg:#d9ecf2; --bg2:#c5e2ec; --ink:#2b4a57; --muted:#5d7e8b;
+  --yellow:#f4d23e; --yellow-d:#dcb522; --yellow-dd:#c39c14;
+  --blue:#4fa6cb; --blue-d:#3889ad; --blue-l:#8ccbe5;
+  --surface:#e8eaea; --dot:#cfd3d4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#13232b;--bg2:#0e1b21;--ink:#cfe6ef;--muted:#86a7b4;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#13232b;--bg2:#0e1b21;--ink:#cfe6ef;--muted:#86a7b4;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);overscroll-behavior:none}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(circle at 50% 35%,var(--bg) 0%,var(--bg2) 100%);
+  color:var(--ink);
+  font-family:ui-rounded,"SF Pro Rounded","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5vh;
+  overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;touch-action:none;
+  -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
+}
+.toy{
+  position:relative;container-type:inline-size;
+  width:min(88vw,780px,calc((100% - 140px) * 1.3));
+  aspect-ratio:1.3;
+  margin-top:6%;
+}
+@supports (height:100svh){ .toy{width:min(86vw,780px,calc((100svh - 190px) * 1.3))} }
+.handle{
+  position:absolute;left:33%;width:34%;top:-7cqw;height:11cqw;
+  border:3.4cqw solid var(--blue);border-bottom:none;border-radius:6cqw 6cqw 0 0;
+  box-shadow:inset 0 .6cqw 0 rgba(255,255,255,.35);
+}
+.ear{position:absolute;width:20cqw;height:20cqw;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,var(--blue-l),var(--blue) 45%,var(--blue-d));}
+.ear.tl{left:-3.5cqw;top:-3cqw}.ear.tr{right:-3.5cqw;top:-3cqw}
+.ear.bl{left:-3.5cqw;bottom:-3cqw}.ear.br{right:-3.5cqw;bottom:-3cqw}
+.body{
+  position:absolute;inset:0;border-radius:8cqw / 10cqw;
+  background:linear-gradient(170deg,#fbe36a,var(--yellow) 30%,var(--yellow-d));
+  box-shadow:0 2.4cqw 4cqw rgba(20,60,80,.25), inset 0 -1.2cqw 0 var(--yellow-dd), inset 0 .8cqw 0 rgba(255,255,255,.4);
+  display:grid;grid-template-columns:12cqw 1fr 10cqw;grid-template-rows:5.5cqw 1fr 9.5cqw;
+}
+.frame{
+  grid-area:2/2;background:var(--blue);border-radius:3cqw;padding:2.6cqw;
+  box-shadow:inset 0 .5cqw 0 rgba(255,255,255,.3), inset 0 -.6cqw 0 var(--blue-d);
+}
+.surface{
+  position:relative;width:100%;height:100%;border-radius:1.2cqw;overflow:hidden;
+  background:
+    radial-gradient(circle,var(--dot) .9px,transparent 1.4px) 0 0/8px 7px,
+    radial-gradient(circle,var(--dot) .9px,transparent 1.4px) 4px 3.5px/8px 7px,
+    linear-gradient(180deg,#f2f3f3,var(--surface));
+  box-shadow:inset 0 .8cqw 1.4cqw rgba(0,0,0,.18);
+  cursor:crosshair;
+}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.left{grid-area:2/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4cqw}
+.socket{
+  width:8.6cqw;height:8.6cqw;border-radius:50%;display:grid;place-items:center;
+  background:var(--yellow-d);box-shadow:inset 0 .6cqw .8cqw rgba(0,0,0,.2);
+}
+button{all:unset;cursor:pointer}
+button:focus-visible{outline:3px solid #fff;outline-offset:3px;border-radius:50%}
+.stamp{width:7.4cqw;height:7.4cqw;display:grid;place-items:center;transition:transform .15s}
+.stamp svg{width:100%;height:100%;filter:drop-shadow(0 .4cqw 0 var(--blue-d))}
+.stamp.on{transform:translateY(-.8cqw) scale(1.08)}
+.stamp.on svg{filter:drop-shadow(0 .4cqw 0 var(--blue-d)) drop-shadow(0 0 1.4cqw rgba(255,255,255,.95))}
+.right{grid-area:2/3;display:flex;align-items:center;justify-content:center}
+.groove{
+  width:5cqw;height:62%;border-radius:3cqw;background:var(--yellow-d);
+  box-shadow:inset 0 .6cqw .8cqw rgba(0,0,0,.2);display:flex;justify-content:center;position:relative;
+}
+.pen{position:absolute;top:-6%;height:112%;width:4cqw;display:flex;justify-content:center;transition:transform .2s}
+.pen svg{height:100%;width:100%;overflow:visible}
+.pen.on{transform:translate(-1.6cqw,-2cqw) rotate(-8deg)}
+.bottom{grid-area:3/2;position:relative}
+.track{position:absolute;left:0;right:0;top:1.6cqw;height:6.5cqw}
+.rail{position:absolute;left:0;right:0;top:2.4cqw;height:1.6cqw;border-radius:1cqw;background:var(--yellow-dd);box-shadow:inset 0 .3cqw .5cqw rgba(0,0,0,.25)}
+.knob{
+  position:absolute;left:0;top:0;width:9cqw;height:6.5cqw;cursor:grab;touch-action:none;
+  will-change:transform;
+}
+.knob svg{width:100%;height:100%;filter:drop-shadow(0 .5cqw 0 var(--blue-d))}
+.knob:active{cursor:grabbing}
+.overlay{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:5;opacity:0;transition:opacity .12s}
+.overlay.show{opacity:1}
+.pen.away{opacity:0}
+.surface.nocursor{cursor:none}
+.toast{
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 18px);transform:translate(-50%,-10px);
+  background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:14px;
+  opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="toy" id="toy">
+  <div class="handle"></div>
+  <div class="ear tl"></div><div class="ear tr"></div><div class="ear bl"></div><div class="ear br"></div>
+  <div class="body">
+    <div class="left">
+      <div class="socket"><button class="stamp" id="star" aria-label="Star stamp">
+        <svg viewBox="-12 -12 24 24"><path d="M0,-10 L2.6,-3.4 9.5,-3.1 4.1,1.3 5.9,8.1 0,4.3 -5.9,8.1 -4.1,1.3 -9.5,-3.1 -2.6,-3.4Z" fill="var(--blue)" stroke="var(--blue-l)" stroke-width="1" stroke-linejoin="round"/><circle cx="0" cy="0" r="2.6" fill="var(--blue-l)"/></svg>
+      </button></div>
+      <div class="socket"><button class="stamp" id="heart" aria-label="Heart stamp">
+        <svg viewBox="-12 -12 24 24"><path d="M0,9 C-6,4 -10,0.5 -10,-3.5 C-10,-7 -7.2,-9 -4.8,-9 C-2.6,-9 -1,-7.6 0,-5.8 C1,-7.6 2.6,-9 4.8,-9 C7.2,-9 10,-7 10,-3.5 C10,0.5 6,4 0,9Z" fill="var(--blue)" stroke="var(--blue-l)" stroke-width="1" stroke-linejoin="round"/><circle cx="0" cy="-2" r="2.6" fill="var(--blue-l)"/></svg>
+      </button></div>
+    </div>
+    <div class="frame"><div class="surface" id="surface"><canvas id="cv"></canvas></div></div>
+    <div class="right">
+      <div class="groove"><button class="pen on" id="pen" aria-label="Magnetic pen, tap again to change size">
+        <svg viewBox="0 0 10 100" preserveAspectRatio="none">
+          <rect x="2" y="2" width="6" height="80" rx="3" fill="var(--blue)"/>
+          <rect x="3.2" y="6" width="1.4" height="60" rx=".7" fill="var(--blue-l)"/>
+          <path d="M2,80 L8,80 L5,98Z" fill="var(--blue-d)"/>
+        </svg>
+      </button></div>
+    </div>
+    <div class="bottom">
+      <div class="track" id="track">
+        <div class="rail"></div>
+        <div class="knob" id="knob" role="slider" aria-label="Eraser slider" tabindex="0">
+          <svg viewBox="0 0 36 26"><path d="M18,25 C8,25 4,20 6,15 C7,12 4,10 5,6 C6,2 10,2 12,4 C13,1 16,0 18,0 C20,0 23,1 24,4 C26,2 30,2 31,6 C32,10 29,12 30,15 C32,20 28,25 18,25Z" fill="var(--blue)"/><ellipse cx="18" cy="14" rx="7" ry="5" fill="var(--blue-l)"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+<svg class="overlay" id="ov" aria-hidden="true">
+    <path id="cord" fill="none" stroke="var(--blue-d)" stroke-width="2.2" stroke-linecap="round"/>
+    <ellipse id="shade" fill="#0d2a36"/>
+    <g id="stylus">
+      <path id="sTip" fill="var(--blue-d)"/>
+      <rect id="sBody" fill="var(--blue)"/>
+      <rect id="sHi" fill="var(--blue-l)"/>
+      <circle id="sDot" fill="#3d4a50"/>
+    </g>
+  </svg>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const toastEl=document.getElementById('toast');
+let dpr=1,W=0,H=0;
+const KEY='magnetic-board-v1';
+
+function toast(t){toastEl.textContent=t;toastEl.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('show'),1100);}
+function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+
+function fit(){
+  const r=cv.getBoundingClientRect(); if(!r.width) return;
+  const old=document.createElement('canvas'); old.width=cv.width; old.height=cv.height;
+  if(cv.width&&cv.height) old.getContext('2d').drawImage(cv,0,0);
+  dpr=window.devicePixelRatio||1; W=r.width; H=r.height;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  ctx.setTransform(1,0,0,1,0,0);
+  if(old.width&&old.height) ctx.drawImage(old,0,0,cv.width,cv.height);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+// magnetic particles
+const palette=[];
+for(let i=0;i<10;i++){const g=34+Math.random()*26|0;palette.push(`rgba(${g},${g+3},${g+8},${(0.55+Math.random()*0.4).toFixed(2)})`);}
+function dab(x,y,r,n){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.2832, d=r*Math.sqrt(Math.random()), s=0.9+Math.random()*1.1;
+    ctx.fillStyle=palette[Math.random()*10|0];
+    ctx.fillRect(x+Math.cos(a)*d-s/2,y+Math.sin(a)*d-s/2,s,s);
+  }
+}
+
+const sizes=[{r:1.6,n:4,l:'Regular'},{r:2.8,n:8,l:'Medium'},{r:5,n:18,l:'Bold'}];
+let sz=1, tool='pen';
+
+// stamps
+function starPoly(cx,cy,R){const p=[];for(let i=0;i<10;i++){const rr=i%2?R*.44:R,a=-Math.PI/2+i*Math.PI/5;p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr]);}return p;}
+function heartPoly(cx,cy,R){const p=[];for(let i=0;i<72;i++){const t=i/72*6.2832;const x=16*Math.pow(Math.sin(t),3);const y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));p.push([cx+x*R/17,cy+(y+2)*R/17]);}return p;}
+function inPoly(x,y,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const xi=p[i][0],yi=p[i][1],xj=p[j][0],yj=p[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;}
+function stamp(kind,cx,cy){
+  const R=Math.max(20,Math.min(W,H)*.1);
+  const p=kind==='star'?starPoly(cx,cy,R):heartPoly(cx,cy,R);
+  const N=(R*R*2.6)|0;
+  for(let k=0;k<N;k++){const x=cx-R*1.1+Math.random()*R*2.2,y=cy-R*1.1+Math.random()*R*2.2;if(inPoly(x,y,p))dab(x,y,.5,1);}
+  for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];const L=Math.hypot(b[0]-a[0],b[1]-a[1]),s=Math.max(1,Math.ceil(L/1.4));for(let k=0;k<s;k++)dab(a[0]+(b[0]-a[0])*k/s,a[1]+(b[1]-a[1])*k/s,1.4,3);}
+  buzz(18);
+  tone(170,55,.14,.55); burst(3000,.18,.25); tone(2600,1800,.02,.08,'square');
+}
+
+// drawing
+let drawing=false,last=null;
+function pos(e){const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
+function line(a,b){const s=sizes[sz];const L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(L/1.1));for(let k=1;k<=n;k++)dab(a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n,s.r,s.n);}
+// sound (Web Audio, synthesized) — always on by design
+let AC=null,noiseBuf=null,penG=null,penF=null,eraG=null,eraF=null,muted=false,penShown=false;
+let penIdle,eraIdle,lastPT=0,lastET=0;
+function audioInit(){
+  if(AC){if(AC.state==='suspended')AC.resume();return;}
+  try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
+  const len=AC.sampleRate*2;noiseBuf=AC.createBuffer(1,len,AC.sampleRate);
+  const d=noiseBuf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(Math.random()<.3?1:.25);
+  const mk=(f,q)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const fl=AC.createBiquadFilter();fl.type='bandpass';fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl).connect(g).connect(AC.destination);s.start();return [g,fl];};
+  [penG,penF]=mk(2600,.9);
+  [eraG,eraF]=mk(700,.5);eraF.type='lowpass';
+}
+document.addEventListener('pointerdown',audioInit,true);
+document.addEventListener('keydown',audioInit,true);
+// iOS standalone PWAs suspend audio when backgrounded; resume on return
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&AC&&AC.state!=='running')AC.resume().catch(()=>{});});
+function level(g,v){if(AC&&g)g.gain.setTargetAtTime(muted?0:v,AC.currentTime,.03);}
+function tone(f1,f2,dur,vol,type='sine'){
+  if(!AC||muted)return; const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();
+  o.type=type;o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.connect(g).connect(AC.destination);o.start(t);o.stop(t+dur+.02);
+}
+function burst(f,dur,vol){
+  if(!AC||muted)return; const t=AC.currentTime,s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();
+  s.buffer=noiseBuf;fl.type='bandpass';fl.frequency.value=f;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  s.connect(fl).connect(g).connect(AC.destination);s.start(t,Math.random());s.stop(t+dur+.02);
+}
+function penSound(dist,t){
+  if(!AC)return; const dt=Math.max(4,t-lastPT);lastPT=t; const sp=dist/dt;
+  penF.frequency.setTargetAtTime(1800+Math.min(3000,sp*1400),AC.currentTime,.03);
+  level(penG,Math.min(.5,sp*.28)*(.7+sz*.2));
+  clearTimeout(penIdle);penIdle=setTimeout(()=>level(penG,0),70);
+}
+function eraSound(d){
+  if(!AC)return; const t=performance.now(),dt=Math.max(8,t-lastET);lastET=t; const sp=d/dt;
+  eraF.frequency.setTargetAtTime(400+Math.min(900,sp*300),AC.currentTime,.04);
+  level(eraG,Math.min(.9,sp*.5));
+  clearTimeout(eraIdle);eraIdle=setTimeout(()=>level(eraG,0),90);
+}
+
+// simulated stylus
+const toyEl=document.getElementById('toy'),ov=document.getElementById('ov'),grooveEl=document.querySelector('.groove'),surfEl=document.getElementById('surface');
+const $=id=>document.getElementById(id);
+const stylus=$('stylus'),cord=$('cord'),shade=$('shade'),sTip=$('sTip'),sBody=$('sBody'),sHi=$('sHi'),sDot=$('sDot');
+let hovering=false,penXY=null;
+function penVis(){
+  const show=tool==='pen'&&penXY&&(drawing||hovering);
+  if(!!show!==penShown){penShown=!!show;if(show)tone(1500,800,.05,.14,'triangle');else tone(800,450,.06,.14,'triangle');}
+  ov.classList.toggle('show',!!show);
+  document.getElementById('pen').classList.toggle('away',!!show);
+  surfEl.classList.toggle('nocursor',tool==='pen');
+}
+function setA(el,o){for(const k in o)el.setAttribute(k,o[k]);}
+function drawPen(){
+  if(!penXY) return;
+  const tr=toyEl.getBoundingClientRect(),cr=cv.getBoundingClientRect(),gr=grooveEl.getBoundingClientRect();
+  const lift=drawing?0:8;
+  const px=penXY[0]+cr.left-tr.left,py=penXY[1]+cr.top-tr.top;
+  const x=px+lift*.5,y=py-lift;
+  const L=tr.width*.24,w=Math.max(7,tr.width*.03),ang=28,a=ang*Math.PI/180;
+  const tipH=L*.14;
+  setA(sTip,{d:`M${-w/2} ${-tipH} L${w/2} ${-tipH} L0 0Z`});
+  setA(sBody,{x:-w/2,y:-L,width:w,height:L-tipH+.5,rx:w/2});
+  setA(sHi,{x:-w/2+w*.18,y:-L+w*.7,width:w*.22,height:L*.6,rx:w*.11});
+  setA(sDot,{cx:0,cy:-w*.15,r:w*.16});
+  stylus.setAttribute('transform',`translate(${x} ${y}) rotate(${ang})`);
+  setA(shade,{cx:px+lift*.4,cy:py+lift*.2,rx:w*(drawing?.7:1),ry:w*(drawing?.28:.4),opacity:drawing?.32:.15});
+  const ex=x+L*Math.sin(a),ey=y-L*Math.cos(a);
+  const ax=gr.left-tr.left+gr.width/2,ay=gr.top-tr.top+gr.height*.12;
+  const cx=(ax+ex)/2,cy=Math.max(ay,ey)+tr.width*.07;
+  cord.setAttribute('d',`M${ex} ${ey} Q${cx} ${cy} ${ax} ${ay}`);
+}
+cv.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&tool==='pen'){hovering=true;penXY=pos(e);drawPen();penVis();}});
+cv.addEventListener('pointerleave',()=>{hovering=false;if(!drawing)penVis();});
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault(); const p=pos(e);
+  if(tool!=='pen'){stamp(tool,p[0],p[1]);save();return;}
+  cv.setPointerCapture(e.pointerId); drawing=true; last=p; penXY=p; drawPen(); penVis();
+  dab(p[0],p[1],sizes[sz].r,sizes[sz].n*2);
+});
+cv.addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse') hovering=true;
+  if(drawing){
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+    let dist=0;
+    for(const ev of evs){const p=pos(ev);dist+=Math.hypot(p[0]-last[0],p[1]-last[1]);line(last,p);last=p;}
+    penSound(dist,e.timeStamp);
+  }
+  if(tool==='pen'){penXY=pos(e);drawPen();penVis();}
+});
+function end(e){
+  if(drawing){drawing=false;save();level(penG,0);}
+  if(e&&e.pointerType!=='mouse') hovering=false;
+  drawPen(); penVis();
+}
+cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
+
+// tools
+const btn={pen:document.getElementById('pen'),star:document.getElementById('star'),heart:document.getElementById('heart')};
+function setTool(t){tool=t;for(const k in btn)btn[k].classList.toggle('on',k===t);penVis();tone(650,420,.05,.16,'triangle');}
+btn.pen.addEventListener('click',()=>{if(tool==='pen'){sz=(sz+1)%3;toast(sizes[sz].l);tone(900+sz*300,700+sz*200,.04,.15,'triangle');}else{setTool('pen');toast(sizes[sz].l);}});
+btn.star.addEventListener('click',()=>{setTool(tool==='star'?'pen':'star');if(tool==='star')toast('Tap the board to stamp a star');});
+btn.heart.addEventListener('click',()=>{setTool(tool==='heart'?'pen':'heart');if(tool==='heart')toast('Tap the board to stamp a heart');});
+
+// eraser slider
+const track=document.getElementById('track'),knob=document.getElementById('knob');
+let kx=0,B=12,anim=null;
+const maxK=()=>Math.max(1,track.clientWidth-knob.offsetWidth);
+const toSurf=k=>(k/maxK())*(W+2*B)-B;
+function setKnob(nx,doWipe=true){
+  nx=Math.max(0,Math.min(maxK(),nx));
+  const prev=kx;
+  const a=toSurf(kx),b=toSurf(nx); kx=nx;
+  if(doWipe&&prev!==nx&&(nx===0||nx===maxK())){tone(150,70,.1,.4);burst(1200,.05,.15);buzz(12);}
+  knob.style.transform=`translateX(${kx}px)`;
+  if(doWipe&&a!==b){ctx.clearRect(Math.min(a,b)-B,0,Math.abs(b-a)+2*B,H);eraSound(Math.abs(b-a));}
+}
+let dragOff=null,moved=false;
+knob.addEventListener('pointerdown',e=>{e.preventDefault();cancelAnimationFrame(anim);knob.setPointerCapture(e.pointerId);dragOff=e.clientX-kx;moved=false;});
+knob.addEventListener('pointermove',e=>{if(dragOff===null)return;const nx=e.clientX-dragOff;if(Math.abs(nx-kx)>.5){moved=true;setKnob(nx);if(Math.random()<.15)buzz(4);}});
+function drop(){if(dragOff!==null){dragOff=null;if(moved)save();}}
+knob.addEventListener('pointerup',drop);knob.addEventListener('pointercancel',drop);
+function sweep(){
+  cancelAnimationFrame(anim);
+  const from=kx,to=kx>maxK()/2?0:maxK(),t0=performance.now(),dur=550;
+  const step=t=>{const f=Math.min(1,(t-t0)/dur),ease=f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2;setKnob(from+(to-from)*ease);if(f<1)anim=requestAnimationFrame(step);else{ctx.clearRect(0,0,W,H);save();}};
+  anim=requestAnimationFrame(step); buzz(30);
+}
+knob.addEventListener('dblclick',sweep);
+let lastTap=0;
+knob.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')return;const n=performance.now();if(!moved&&n-lastTap<320){sweep();lastTap=0;}else if(!moved)lastTap=n;});
+knob.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){setKnob(kx+maxK()/12);save();e.preventDefault();}
+  else if(e.key==='ArrowLeft'){setKnob(kx-maxK()/12);save();e.preventDefault();}
+  else if(e.key==='Enter'||e.key===' '){sweep();e.preventDefault();}
+});
+
+// persistence (per-device)
+let saveT;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,cv.toDataURL('image/png'));}catch(e){}},250);}
+function load(){
+  let d=null;try{d=localStorage.getItem(KEY);}catch(e){}
+  if(!d) return;
+  const img=new Image();img.onload=()=>{ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(img,0,0,cv.width,cv.height);ctx.restore();};img.src=d;
+}
+
+new ResizeObserver(()=>{const f=kx/maxK();fit();setKnob(f*maxK(),false);}).observe(cv);
+fit(); load();
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+})();
+
+// PWA: offline support + installable
+if('serviceWorker' in navigator){
+  addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+}
+</script>
+</body>
+</html>
